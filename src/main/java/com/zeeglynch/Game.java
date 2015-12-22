@@ -1,17 +1,20 @@
 package com.zeeglynch;
 
 import javafx.application.Application;
-import javafx.event.Event;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
-import javafx.scene.layout.GridPane;
+import javafx.scene.control.TextField;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
@@ -23,9 +26,9 @@ import java.util.Random;
  */
 public class Game extends Application {
 
-    private byte horizontalCellCount = 25;
-    private byte verticalCellCount = 20;
-    private int bombCount = 10;
+    private byte columnCount = 15;
+    private byte rowCount = 15;
+    private int bombCount = 20;
     private static int revealedCellsCount = 0;
     private int freeCellsCount;
     private boolean gameLost = false;
@@ -33,50 +36,64 @@ public class Game extends Application {
     private double cellWidth = 30;
     private double cellHeight = 30;
     private Stage stage;
-    private Cell cells[][] = new Cell[horizontalCellCount][verticalCellCount];
+    private Cell cells[][];
     private Label statusBar;
     private Label infoBar;
     private long timePlayed = 0;
+    private String gameState = "Set game ";
     private long timeStarted;
     private long now;
     GridPane pane;
 
-    EventHandler handler = new EventHandler() {
-        public void handle(Event event) {
+
+    EventHandler handler = new EventHandler<MouseEvent>() {
+
+
+        @Override
+        public void handle(MouseEvent event) {
             if (gameLost) {
+                showSettingsPanel();
+            } else if (gameWon) {
+                System.out.println("GAME WON!");
                 restart();
             } else {
                 Cell curCell;
                 for (int i = 0; i < cells.length; i++) {
                     for (int j = 0; j < cells[i].length; j++) {
-                        if (event.getSource() == cells[i][j]) {
 
-                            curCell = cells[i][j];
-                            if (revealedCellsCount == 0) {
-                                while (curCell.value > 8) {
-                                    cells = plantBombs(cells, bombCount);
-                                }
-                                timeStarted = System.currentTimeMillis();
-                            }
-                            renderInfoBar();
-                            renderStatusBar();
-                            if (revealedCellsCount == freeCellsCount) {
-                                statusBar.setText("GAME WON!!");
-                                revealTheField(cells);
-                                gameWon = true;
-                            }
-//                            curCell.flag();
-                            revealTheSector(curCell);
-                            if (curCell.value > 8) {
-                                statusBar.setText("GAME OVER.");
-                                revealTheField(cells);
-                                gameLost = true;
-                                    /*for (int k = 0; k < cells.length; k++) {
-                                        for (int l = 0; l < cells[k].length; l++) {
-                                            cells[k][l].setDisable(false);
+                        if (event.getSource() == cells[i][j]) {
+                            if (event.getButton() == MouseButton.PRIMARY) {
+
+                                if (!cells[i][j].isMarked) {
+                                    curCell = cells[i][j];
+                                    if (revealedCellsCount == 0) {
+                                        while (curCell.value > 8) {
+                                            cells = plantBombs(cells, bombCount);
                                         }
-                                    }*/
-                                cells[0][0].setDisable(false);
+                                        timeStarted = System.currentTimeMillis();
+                                    }
+                                    renderInfoBar();
+                                    renderStatusBar();
+                                    if (revealedCellsCount == freeCellsCount - 1) {
+                                        gameState = "YOU WON!";
+                                        statusBar.setText(gameState);
+                                        revealTheField(cells);
+                                        gameWon = true;
+                                        cells[0][0].setDisable(false);
+                                        showSettingsPanel();
+                                    }
+                                    revealTheSector(curCell);
+                                    if (curCell.value > 8) {
+                                        gameState = "YOU LOST";
+                                        statusBar.setText(gameState);
+                                        revealTheField(cells);
+                                        gameLost = true;
+                                        cells[0][0].setDisable(false);
+                                        showSettingsPanel();
+                                    }
+                                }
+                            } else if (event.getButton() == MouseButton.SECONDARY) {
+                                cells[i][j].flag();
                             }
                         }
                     }
@@ -134,11 +151,59 @@ public class Game extends Application {
                 setText(cellText);
                 setDisable(true);
                 revealedCellsCount++;
-                System.out.println("Cell revealed~");
+                System.out.println("REVEALED CELLS COUNT: " + revealedCellsCount);
+//                System.out.println("Cell revealed~");
                 isRevealed = true;
             }
         }
-        
+
+    }
+
+    private void showSettingsPanel() {
+        final Stage dialog = new Stage();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initOwner(stage);
+        final VBox dialogVbox = new VBox();
+
+        dialogVbox.getChildren().add(new Text(gameState));
+        dialogVbox.getChildren().add(new Text("Row count:"));
+        final TextField rowCountField = new TextField(Byte.toString(rowCount));
+        dialogVbox.getChildren().add(rowCountField);
+        dialogVbox.getChildren().add(new Text("Column count:"));
+        final TextField columnCountField = new TextField(Byte.toString(columnCount));
+        dialogVbox.getChildren().add(columnCountField);
+        dialogVbox.getChildren().add(new Text("Bomb count:"));
+        final TextField bombCountField = new TextField(Integer.toString(bombCount));
+        dialogVbox.getChildren().add(bombCountField);
+        Button startButton = new Button("Start!");
+        startButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    rowCount = Byte.parseByte(rowCountField.getText());
+                    columnCount = Byte.parseByte(columnCountField.getText());
+                    bombCount = Integer.parseInt(bombCountField.getText());
+                    if (bombCount > rowCount * columnCount - 2) {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Please, set larger field resolution or lesser bomb amount.");
+                        alert.show();
+                    } else if (bombCount < 1 || rowCount < 1 || columnCount < 1) {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Numbers should be positive, ASSHOLE.");
+                        alert.show();
+                    } else {
+                        restart();
+                        dialog.close();
+                    }
+                } catch (NumberFormatException ex) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Please, use NUMBERS to set dimensions and bomb amount.");
+                    alert.show();
+                }
+            }
+        });
+        dialogVbox.getChildren().add(startButton);
+        dialogVbox.setSpacing(10);
+        Scene dialogScene = new Scene(dialogVbox);
+        dialog.setScene(dialogScene);
+        dialog.show();
     }
 
     private static Color getContrastColor(Color color) {
@@ -221,15 +286,17 @@ public class Game extends Application {
     }
 
     private void prepare(Stage primaryStage) {
-        primaryStage.setTitle("Glomines");
+        primaryStage.setTitle("MineZ");
         Cell tmpCell;
+        cells = new Cell[columnCount][rowCount];
         for (int i = 0; i < cells.length; i++) {
             for (int j = 0; j < cells[i].length; j++) {
                 tmpCell = new Cell(0, i, j);
                 tmpCell.setMinSize(cellWidth, cellHeight);
                 tmpCell.setMaxSize(cellWidth, cellHeight);
                 cells[i][j] = tmpCell;
-                cells[i][j].setOnAction(handler);
+//                cells[i][j].setOnAction(newHandler);
+                cells[i][j].setOnMouseClicked(handler);
                 GridPane.setConstraints(cells[i][j], i, j);
             }
         }
@@ -242,9 +309,19 @@ public class Game extends Application {
         statusBar = new Label("Press any cell to start");
         infoBar = new Label("Bomb amount: " + bombCount + "\t Free cells: " + freeCellsCount + "\n Revealed cells: " + revealedCellsCount);
         GridPane.setConstraints(statusBar, 0, cells.length, cells[0].length, 1);
-        GridPane.setConstraints(infoBar, 0, cells.length+1, cells[0].length, 1);
+        GridPane.setConstraints(infoBar, 0, cells.length + 1, cells[0].length, 1);
         pane.getChildren().add(statusBar);
         pane.getChildren().add(infoBar);
+        Button restartButton = new Button("Restart/Change dimensions");
+        restartButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                showSettingsPanel();
+
+            }
+        });
+        GridPane.setConstraints(restartButton, 0, cells.length + 2, cells[0].length, 1);
+        pane.getChildren().add(restartButton);
 
         Scene scene = new Scene(pane);
         primaryStage.setScene(scene);
@@ -254,6 +331,7 @@ public class Game extends Application {
 
     private void restart() {
         Cell tmpCell;
+        cells = new Cell[columnCount][rowCount];
         for (int i = 0; i < cells.length; i++) {
             for (int j = 0; j < cells[i].length; j++) {
                 tmpCell = new Cell(0, i, j);
