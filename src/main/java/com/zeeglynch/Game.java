@@ -29,6 +29,7 @@ public class Game extends Application {
     private byte columnCount = 15;
     private byte rowCount = 15;
     private int bombCount = 20;
+    private int bombsMarked;
     private static int revealedCellsCount = 0;
     private int freeCellsCount;
     private boolean gameLost = false;
@@ -127,6 +128,7 @@ public class Game extends Application {
             if (!isRevealed && !isMarked) {
                 setText("B");
                 isMarked = true;
+                bombsMarked++;
 //                setDisable(true);
             }
         }
@@ -135,6 +137,7 @@ public class Game extends Application {
             if (!isRevealed && isMarked) {
                 setText("");
                 isMarked = false;
+                bombsMarked--;
 //                setDisable(false);
             }
         }
@@ -153,7 +156,13 @@ public class Game extends Application {
                 revealedCellsCount++;
                 System.out.println("REVEALED CELLS COUNT: " + revealedCellsCount);
 //                System.out.println("Cell revealed~");
+                if (isMarked) {
+                    unmark();
+
+                }
                 isRevealed = true;
+
+
             }
         }
 
@@ -243,7 +252,9 @@ public class Game extends Application {
     }
 
     private void renderInfoBar() {
-        infoBar.setText("Bomb amount: " + bombCount + "\t Free cells: " + freeCellsCount + "\n Revealed cells: " + revealedCellsCount);
+        infoBar.setText("Bomb amount: " + bombCount + "\t Bombs marked: " + bombsMarked
+                + "\n Bombs left: " + (bombCount - bombsMarked) + "\t Free cells: " + freeCellsCount
+                + "\t Revealed cells: " + revealedCellsCount);
     }
 
     private void printTheField(Cell[][] testField) {
@@ -281,7 +292,9 @@ public class Game extends Application {
                 }
             }
             cells[bombXPos][bombYPos].value = 9;
+
         }
+        bombsMarked = 0;
         return newCells;
     }
 
