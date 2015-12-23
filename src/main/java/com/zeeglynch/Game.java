@@ -40,16 +40,11 @@ public class Game extends Application {
     private Cell cells[][];
     private Label statusBar;
     private Label infoBar;
-    private long timePlayed = 0;
-    private String gameState = "Set game ";
+    private String gameState = "Click any cell to begin";
     private long timeStarted;
-    private long now;
     GridPane pane;
 
-
     EventHandler handler = new EventHandler<MouseEvent>() {
-
-
         @Override
         public void handle(MouseEvent event) {
             if (gameLost) {
@@ -129,7 +124,6 @@ public class Game extends Application {
                 setText("B");
                 isMarked = true;
                 bombsMarked++;
-//                setDisable(true);
             }
         }
 
@@ -138,7 +132,6 @@ public class Game extends Application {
                 setText("");
                 isMarked = false;
                 bombsMarked--;
-//                setDisable(false);
             }
         }
 
@@ -154,18 +147,12 @@ public class Game extends Application {
                 setText(cellText);
                 setDisable(true);
                 revealedCellsCount++;
-                System.out.println("REVEALED CELLS COUNT: " + revealedCellsCount);
-//                System.out.println("Cell revealed~");
                 if (isMarked) {
                     unmark();
-
                 }
                 isRevealed = true;
-
-
             }
         }
-
     }
 
     private void showSettingsPanel() {
@@ -173,7 +160,6 @@ public class Game extends Application {
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(stage);
         final VBox dialogVbox = new VBox();
-
         dialogVbox.getChildren().add(new Text(gameState));
         dialogVbox.getChildren().add(new Text("Row count:"));
         final TextField rowCountField = new TextField(Byte.toString(rowCount));
@@ -220,11 +206,10 @@ public class Game extends Application {
     }
 
     private void revealTheField(Cell[][] cells) {
-        for (int i = 0; i < cells.length; i++) {
-            for (int j = 0; j < cells[i].length; j++) {
-                cells[i][j].reveal();
+        for (Cell[] cell : cells) {
+            for (Cell aCell : cell) {
+                aCell.reveal();
             }
-
         }
     }
 
@@ -245,8 +230,8 @@ public class Game extends Application {
         } else if (revealedCellsCount == 0) {
             statusBar.setText("Press any cell to start.");
         } else {
-            now = System.currentTimeMillis();
-            timePlayed = now - timeStarted;
+            long now = System.currentTimeMillis();
+            long timePlayed = now - timeStarted;
             statusBar.setText("Time played: " + formatTime(timePlayed) + ".");
         }
     }
@@ -257,24 +242,15 @@ public class Game extends Application {
                 + "\t Revealed cells: " + revealedCellsCount);
     }
 
-    private void printTheField(Cell[][] testField) {
-        for (int i = 0; i < testField.length; i++) {
-            for (int j = 0; j < testField[i].length; j++) {
-                System.out.print((testField[i][j].value < 9 ? testField[i][j].value : "x") + " ");
-            }
-            System.out.println();
-        }
-    }
-
     private Cell[][] plantBombs(Cell[][] cells, int bombCount) {
         freeCellsCount = cells.length * cells[0].length - bombCount;
         Cell[][] newCells = cells.clone();
         Random rand = new Random();
         int bombXPos;
         int bombYPos;
-        for (int i = 0; i < newCells.length; i++) {
-            for (int j = 0; j < newCells[i].length; j++) {
-                newCells[i][j].value = 0;
+        for (Cell[] newCell : newCells) {
+            for (Cell aNewCell : newCell) {
+                aNewCell.value = 0;
             }
         }
         for (int b = 0; b < bombCount; b++) {
@@ -292,7 +268,6 @@ public class Game extends Application {
                 }
             }
             cells[bombXPos][bombYPos].value = 9;
-
         }
         bombsMarked = 0;
         return newCells;
@@ -308,7 +283,6 @@ public class Game extends Application {
                 tmpCell.setMinSize(cellWidth, cellHeight);
                 tmpCell.setMaxSize(cellWidth, cellHeight);
                 cells[i][j] = tmpCell;
-//                cells[i][j].setOnAction(newHandler);
                 cells[i][j].setOnMouseClicked(handler);
                 GridPane.setConstraints(cells[i][j], i, j);
             }
@@ -316,8 +290,8 @@ public class Game extends Application {
         cells = plantBombs(cells, bombCount);
         pane = new GridPane();
 
-        for (int i = 0; i < cells.length; i++) {
-            pane.getChildren().addAll(new ArrayList(Arrays.asList(cells[i])));
+        for (Cell[] cell : cells) {
+            pane.getChildren().addAll(new ArrayList<Cell>(Arrays.asList(cell)));
         }
         statusBar = new Label("Press any cell to start");
         infoBar = new Label("Bomb amount: " + bombCount + "\t Free cells: " + freeCellsCount + "\n Revealed cells: " + revealedCellsCount);
@@ -330,7 +304,6 @@ public class Game extends Application {
             @Override
             public void handle(ActionEvent event) {
                 showSettingsPanel();
-
             }
         });
         GridPane.setConstraints(restartButton, 0, cells.length + 2, cells[0].length, 1);
@@ -345,7 +318,7 @@ public class Game extends Application {
     private void restart() {
         Cell tmpCell;
         cells = new Cell[columnCount][rowCount];
-        for (int i = 0; i < cells.length; i++) {
+        for (int i = 0; i < cells.length; i++)
             for (int j = 0; j < cells[i].length; j++) {
                 tmpCell = new Cell(0, i, j);
                 tmpCell.setMinSize(cellWidth, cellHeight);
@@ -354,22 +327,11 @@ public class Game extends Application {
                 cells[i][j].setOnAction(handler);
                 GridPane.setConstraints(cells[i][j], i, j);
             }
-        }
         cells = plantBombs(cells, bombCount);
         revealedCellsCount = 0;
         gameLost = false;
         prepare(stage);
 
-    }
-
-    private void revealTheSector(int cellX, int cellY) {
-        Cell curCell = cells[cellX][cellY];
-        if (curCell.value == 0) {
-            revealSurroundings(cellX, cellY);
-        } else if (curCell.value < 9) {
-            System.out.println("Revelation is dangerous");
-            curCell.reveal();
-        }
     }
 
     private void revealTheSector(Cell curCell) {
@@ -379,7 +341,6 @@ public class Game extends Application {
             ArrayList<Cell> revealedCells = revealSurroundings(cellX, cellY);
             for (Cell revealedCell : revealedCells) {
                 if (revealedCell.value == 0) {
-
                     revealSurroundings(revealedCell);
                 }
             }
@@ -396,7 +357,6 @@ public class Game extends Application {
                 if (i > -1 && j > -1 && i < this.cells.length && j < this.cells[0].length) {
                     cells[i][j].reveal();
                     cellsRevealed.add(cells[i][j]);
-//                    revealSurroundings(cells[i][j]);
                 }
             }
         }
